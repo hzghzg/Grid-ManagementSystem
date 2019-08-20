@@ -1,0 +1,292 @@
+<html>
+
+<head>
+    <link rel="stylesheet" type="text/css" href="./resources/css/ext-all.css" />
+    <title>StudentInfoManageSystem</title>
+    <script type="text/javascript" src="./adapter/ext/ext-base.js"></script>
+    <script type="text/javascript" src="./ext-all.js"></script>
+    <script type="text/javascript" src="./PagingMemoryProxy.js"></script>
+    <style>
+        .x-panel-body {
+            border-bottom: 0px
+        }
+
+        .x-panel-body-noheader,
+        .x-panel-mc .x-panel-body {
+            border-top: 0px;
+        }
+
+        .x-border-layout-ct {
+            background-color: white;
+        }
+    </style>
+    <script>
+        Ext.onReady(function () {
+            var sm = new Ext.grid.CheckboxSelectionModel();
+            var cm = new Ext.grid.ColumnModel([
+                new Ext.grid.RowNumberer(),
+                sm,
+                {
+                    header: 'name',
+                    dataIndex: 'name',
+                    sortable: true,
+                    editor: new Ext.grid.GridEditor(
+                        new Ext.form.TextField({
+                            allowBlank: false
+                        })
+                    )
+                },
+                {
+                    header: 'class',
+                    dataIndex: 'class',
+                    sortable: true,
+                    editor: new Ext.grid.GridEditor(
+                        new Ext.form.TextField({
+                            allowBlank: false
+                        })
+                    ),
+                },
+                {
+                    header: 'sex',
+                    dataIndex: 'sex',
+                    editor: new Ext.grid.GridEditor(
+                        new Ext.form.TextField({
+                            allowBlank: false
+                        })
+                    ),
+                },
+                {
+                    header: 'age',
+                    dataIndex: 'age',
+                    editor: new Ext.grid.GridEditor(
+                        new Ext.form.TextField({
+                            allowBlank: false
+                        })
+                    ),
+                },
+                {
+                    header: 'birthday',
+                    dataIndex: 'birthday',
+                    editor: new Ext.grid.GridEditor(
+                        new Ext.form.TextField({
+                            allowBlank: false
+                        })
+                    ),
+                    renderer: Ext.util.Format.dateRenderer('Y-m-d')
+                },
+                {
+                    header: 'avatar',
+                    dataIndex: 'avatar',
+                    renderer: function (value) {
+                        if (value === 'male') {
+                            return "<img  style='width:15px;height:15px' src='user_male.png'/>"
+                        } else {
+                            return "<img style='width:15px;height:15px' src='user_female.png'/>"
+                        }
+                    },
+                }
+            ]);
+
+            var data = [
+                ['Daryl', 'Bering', 'male', 22, '1996-11-30', 'male'],
+                ['Samson', 'Bering', 'male', 21, '1997-09-10', 'male'],
+                ['Felicity', 'Bering', 'female', 21, '1997-11-15', 'female'],
+                ['Jack', 'Panama', 'male', 22, '1996-10-14', 'male'],
+                ['Panda', 'Panama', 'male', 21, '1997-09-21', 'male'],
+                ['Rose', 'Suez', 'female', 20, '1998-09-21', 'female'],
+                ['Jennie', 'Suez', 'female', 20, '1998-11-21', 'female']
+            ];
+
+            var StudentRecord = Ext.data.Record.create([
+                { name: 'name', type: 'string' },
+                { name: 'class', type: 'string' },
+                { name: 'sex', type: 'string' },
+                { name: 'age', type: 'number' },
+                { name: 'birthday', type: 'date' },
+                { name: 'avatar', type: 'string' }
+            ]);
+
+            var store = new Ext.data.GroupingStore({
+                proxy: new Ext.data.PagingMemoryProxy(data),
+                reader: new Ext.data.ArrayReader({}, [
+                    { name: 'name' },
+                    { name: 'class' },
+                    { name: 'sex' },
+                    { name: 'age' },
+                    { name: 'birthday', type: 'date', dateFormat: 'Y-m-d' },
+                    { name: 'avatar' }
+                ]),
+                groupField: 'class',
+                sortInfo: { field: 'sex', direction: 'ASC' }
+            });
+
+            var grid = new Ext.grid.EditorGridPanel({
+                autoHeight: true,
+                store: store,
+                cm: cm,
+                sm: sm,
+                view: new Ext.grid.GroupingView({ forceFit: true }),
+                bbar: new Ext.PagingToolbar({
+                    pageSize: 5,
+                    store: store,
+                    displayInfo: true,
+                    displayMsg: '显示第 {0} 条到 {1} 条记录，一共 {2} 条',
+                    emptyMsg: "没有记录"
+                }),
+                tbar: new Ext.Toolbar([{
+                    text: 'Add',
+                    handler: function () {
+                        var model = grid.getSelectionModel();
+                        var selections = model.getSelections();
+                        var newRecord = new StudentRecord({
+                            name: '',
+                            class: data[0][1],
+                            sex: '',
+                            age: '',
+                            birthday: '',
+                            avatar: ''
+                        });
+                        console.log(selections);
+                        if (selections.length > 1) {
+                            var className = selections.map(i => i.data.class);
+                            var nonRedundantClassName = [];
+                            className.forEach(i => {
+                                if (nonRedundantClassName.indexOf(i) < 0)
+                                    nonRedundantClassName.push(i);
+                            });
+                            var index = 0;
+                            nonRedundantClassName.forEach(i => {
+                                var newRecord = new StudentRecord({
+                                    name: '',
+                                    class: '',
+                                    sex: '',
+                                    age: '',
+                                    birthday: '',
+                                    avatar: ''
+                                });
+                                newRecord.data.class = i;
+                                store.insert(store.indexOf(selections[index]), newRecord);
+                                index++;
+                            })
+                        } else if (selections.length === 1) {
+                            newRecord.data.class = selections[0].data.class;
+                            store.insert(store.indexOf(selections[0]), newRecord);
+                        } else {
+                            store.insert(0, newRecord);
+                        }
+                        grid.stopEditing();
+                        grid.startEditing(0, 0);
+                        grid.getView().refresh();
+                    }
+                }, { xtype: 'spacer', width: 50 }, {
+                    text: 'Delete',
+                    handler: function () {
+                        Ext.Msg.confirm('Alert', '确定删除记录吗？', function (btn) {
+                            if (btn == 'yes') {
+                                var model = grid.getSelectionModel();
+                                var selections = model.getSelections();
+                                selections.forEach(item => {
+                                    store.remove(store.getById(item.id));
+                                });
+                            }
+                        });
+                    }
+                }]),
+            });
+
+            var contextmenu = new Ext.menu.Menu({
+                id: 'theContextMenu',
+                items: [{
+                    text: 'Up',
+                    disable: true,
+                    handler: function () {
+                        var record = grid.getSelectionModel().getSelections();
+                        var index = store.indexOf(record[0]);
+                        if (index === 0) return false;
+                        store.remove(record);
+                        store.insert(index - 1, record);
+                        grid.getView().refresh();
+                    }
+                }, {
+                    text: 'Down',
+                    handler: function () {
+                        var record = grid.getSelectionModel().getSelections();
+                        var index = store.indexOf(record[0]);
+                        if (index === (store.getCount() - 1)) return false;
+                        store.remove(record);
+                        store.insert(index + 1, record);
+                        grid.getView().refresh();
+                    }
+                }, {
+                    text: 'First',
+                    handler: function () {
+                        var record = grid.getSelectionModel().getSelections();
+                        store.remove(record);
+                        store.insert(0, record);
+                        grid.getView().refresh();
+                    }
+                }, {
+                    text: 'Last',
+                    handler: function () {
+                        var record = grid.getSelectionModel().getSelections();
+                        store.remove(record);
+                        store.insert(store.getCount(), record);
+                        grid.getView().refresh();
+                    }
+                }]
+            });
+
+            grid.on("rowcontextmenu", function (grid, rowIndex, e) {
+                e.preventDefault();
+                grid.getSelectionModel().selectRow(rowIndex);
+                contextmenu.showAt(e.getXY());
+            })
+
+            store.load({ params: { start: 0, limit: 5 } });
+            var panel = new Ext.Panel({
+                id: 'main',
+                title: '信息管理系统',
+                layout: 'border',
+                items: [{
+                    id: 'function model',
+                    region: 'west',
+                    title: '功能模块',
+                    width: 150,
+                    collapsible: true,
+                    layout: 'accordion',
+                    layoutConfig: {
+                        activeOnTop: true,
+                        hideCollapseTool: true,
+                        titleCollapse: true
+                    },
+                    items: [{
+                        id: 'model1',
+                        title: '班级与学生信息',
+                    }]
+                },
+                {
+                    id: 'center',
+                    region: 'center',
+                    items: [
+                        grid
+                    ]
+                }
+                ]
+            })
+            var window = new Ext.Window({
+                width: 900,
+                height: 700,
+                title: 'Google Chrome',
+                layout: 'fit',
+                items: [panel]
+            });
+            window.show();
+        });
+    </script>
+</head>
+
+<body>
+    <div id='tree'></div>
+</body>
+
+</html>
